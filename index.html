@@ -1,21 +1,15 @@
-Точно, пластиковый кофейный стаканчик — совсем другая история. Вот исправленное описание для него (и поправил остальные тексты, чтобы были чёткими и информативными):
-
-**Стаканчик (пластиковый кофейный):**
-- Содержит токсичный бисфенол А (BPA)
-- Разлагается 450+ лет, распадаясь на микропластик
-- Микропластик попадает в еду, воду, организм животных и человека
-
-Ниже полный исправленный код. Я заменил только описание для стаканчика (индекс 2), всё остальное осталось как работало.
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Эко-патруль — Пластиковый стаканчик</title>
+<title>Эко-патруль — Эффекты и рестарт</title>
 
 <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
+
+<!-- Canvas Confetti для праздника -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -24,61 +18,126 @@ body {
   position: fixed;
   width:100%; height:100%;
   background:#000;
-  font-family:sans-serif;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
 }
 
-/* КНОПКА СТАРТА */
+/* СТАРТОВЫЙ ЭКРАН */
 .start-btn {
   position:fixed;
   inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#111;
+  background:linear-gradient(145deg, #0a2f1a, #031007);
   z-index:1000;
   color:white;
   flex-direction:column;
+  gap:20px;
+  text-align:center;
+}
+
+.start-btn h2 {
+  font-size:2rem;
+  letter-spacing:2px;
+  background:linear-gradient(135deg, #b9fbc0, #6fcf97);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
 }
 
 .start-btn button {
-  padding:15px 25px;
+  padding:14px 28px;
   font-size:18px;
   border:none;
-  border-radius:12px;
-  background:#66BB6A;
+  border-radius:40px;
+  background:#2e7d32;
   color:white;
   cursor:pointer;
+  font-weight:bold;
+  transition:0.2s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
 }
 
-/* UI */
+.start-btn button:active {
+  transform:scale(0.96);
+}
+
+/* UI панели */
 .score {
   position:absolute;
   top:20px; right:20px;
-  background:rgba(0,0,0,0.7);
-  padding:10px 15px;
-  border-radius:20px;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(8px);
+  padding:8px 18px;
+  border-radius:40px;
   color:white;
-  z-index:100;
+  z-index:200;
   font-weight:bold;
-  backdrop-filter: blur(4px);
+  font-size:1.2rem;
+  font-family:monospace;
+  border:1px solid #66bb6a;
 }
 
 .info {
   position:absolute;
   bottom:20px; left:20px; right:20px;
   background:rgba(0,0,0,0.85);
-  padding:15px;
-  border-radius:15px;
-  color:white;
-  z-index:100;
+  backdrop-filter:blur(12px);
+  padding:14px 18px;
+  border-radius:28px;
+  color:#e0f2e0;
+  z-index:200;
   text-align:center;
-  backdrop-filter: blur(8px);
-  font-size:15px;
   font-weight:500;
+  font-size:0.95rem;
+  border-left:4px solid #66bb6a;
+  transition:0.2s;
 }
 
-.hidden { display: none; }
+/* КНОПКА РЕСТАРТ */
+.restart-btn {
+  position:absolute;
+  bottom:100px;
+  left:20px;
+  right:20px;
+  background:#2c2c2c;
+  border:1px solid #66bb6a;
+  color:#d4ffd4;
+  padding:12px;
+  border-radius:60px;
+  font-weight:bold;
+  font-size:1rem;
+  text-align:center;
+  z-index:200;
+  cursor:pointer;
+  backdrop-filter:blur(10px);
+  transition:0.2s;
+  max-width:200px;
+  margin:0 auto;
+  box-shadow:0 2px 10px rgba(0,0,0,0.3);
+}
+
+.restart-btn:active {
+  transform:scale(0.97);
+  background:#1f3b2c;
+}
+
+.hidden { display:none; }
+
+/* Анимация вспышки для эффекта обнаружения */
+.flash-overlay {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:white;
+  pointer-events:none;
+  z-index:500;
+  opacity:0;
+  transition:opacity 0.08s linear;
+}
 
 /* Контейнер и сцена на весь экран */
 #sceneContainer {
@@ -108,28 +167,24 @@ body {
   object-fit: cover !important;
 }
 
-/* Полностью убираем квадратные плоскости, оставляем только текст */
+/* Убираем квадратные плоскости */
 a-plane {
   opacity: 0 !important;
   visibility: hidden !important;
 }
-
 a-plane a-text {
   opacity: 1 !important;
   visibility: visible !important;
 }
-
 a-text {
   font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+  text-shadow: 2px 2px 6px black;
   background: transparent;
   white-space: pre-wrap;
 }
-
 .a-enter-vr, .a-orientation-modal {
   display: none;
 }
-
 canvas {
   outline: none;
   border: none;
@@ -140,8 +195,8 @@ canvas {
 
 <div class="start-btn" id="startScreen">
   <h2>🌍 Эко-патруль</h2>
-  <p style="margin-top:10px; margin-bottom:15px;">Наведи камеру на экологические метки</p>
-  <button onclick="startAR()">Начать</button>
+  <p>Наведи камеру на экологические метки<br>и спаси планету!</p>
+  <button onclick="startAR()">🌿 Начать</button>
 </div>
 
 <div class="score hidden" id="scorePanel">
@@ -152,13 +207,21 @@ canvas {
   🔍 Наведи камеру на предмет
 </div>
 
+<div class="restart-btn hidden" id="restartBtn">
+  🔄 Начать заново
+</div>
+
 <div id="sceneContainer"></div>
+<div id="flashEffect" class="flash-overlay"></div>
 
 <script>
+// ========= ИГРОВОЕ СОСТОЯНИЕ ==========
 let found = 0;
-const collected = [false,false,false,false];
+let collected = [false, false, false, false];
+let currentSceneActive = false;
+let sceneElement = null;
 
-// Данные по каждому предмету: название + описание вреда (у стаканчика исправлено)
+// Данные предметов
 const targets = [
 {
  index: 0,
@@ -190,89 +253,229 @@ const targets = [
 }
 ];
 
-function startAR(){
- document.getElementById('startScreen').style.display = 'none';
-
- const sceneHTML = `
- <a-scene
-   mindar-image="imageTargetSrc: targets.mind;"
-   embedded
-   vr-mode-ui="enabled:false"
-   device-orientation-permission-ui="enabled:true"
-   style="position:fixed; top:0; left:0; width:100%; height:100%;"
- >
-   <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
-
-   ${targets.map(t => `
-   <a-entity mindar-image-target="targetIndex:${t.index}" id="t${t.index}">
-     <!-- Плоскость полностью прозрачная, квадрат не виден -->
-     <a-plane color="transparent" width="1.6" height="0.95" transparent="true" opacity="0" visible="false">
-       <a-text value="${t.text.replace(/\n/g, '\\n')}"
-         align="center"
-         color="#ffffff"
-         background="false"
-         width="1.5"
-         position="0 0 0.01"
-         font="exo2bold"
-         wrap-count="20"
-         line-height="1.4"
-         z-offset="0.02">
-       </a-text>
-     </a-plane>
-   </a-entity>
-   `).join('')}
-
-   <a-light type="ambient" intensity="0.6"></a-light>
-   <a-light type="directional" position="1 2 1" intensity="0.8"></a-light>
- </a-scene>
- `;
-
- document.getElementById('sceneContainer').innerHTML = sceneHTML;
-
- setTimeout(() => {
-   attachListeners();
-   document.getElementById('scorePanel').classList.remove('hidden');
-   document.getElementById('info').classList.remove('hidden');
- }, 1000);
+// ========= ЭФФЕКТЫ ==========
+function playDiscoveryEffect() {
+  // 1. Вспышка белого цвета
+  const flash = document.getElementById('flashEffect');
+  if (flash) {
+    flash.style.opacity = '0.7';
+    setTimeout(() => { flash.style.opacity = '0'; }, 100);
+  }
+  
+  // 2. Вибрация (если поддерживается устройством)
+  if (navigator.vibrate) {
+    navigator.vibrate(100);
+  }
+  
+  // 3. Анимация на информационной панели (легкое подпрыгивание)
+  const infoDiv = document.getElementById('info');
+  if (infoDiv) {
+    infoDiv.style.transform = 'scale(1.02)';
+    setTimeout(() => { if(infoDiv) infoDiv.style.transform = ''; }, 150);
+  }
+  
+  // 4. Маленькие конфетти над найденным предметом? (но чтобы не спамить, легкий пшик)
+  canvasConfetti({
+    particleCount: 30,
+    spread: 60,
+    origin: { y: 0.7, x: 0.5 },
+    startVelocity: 8,
+    colors: ['#66bb6a', '#ffd966', '#4caf50']
+  });
 }
 
-function attachListeners() {
- targets.forEach(t => {
-   const el = document.getElementById(`t${t.index}`);
-   if (!el) return;
-
-   el.addEventListener("targetFound", () => {
-     if (!collected[t.index]) {
-       collected[t.index] = true;
-       found++;
-
-       document.getElementById('score').innerText = found;
-       document.getElementById('info').innerHTML = `✅ ${t.longMsg}`;
-
-       if (found === 4) {
-         setTimeout(() => {
-           document.getElementById('info').innerHTML = "🎉 Ты ЭКО-ГЕРОЙ! 🌍 Спасибо за заботу о планете!";
-           alert("🎉 ПОЗДРАВЛЯЮ! Ты собрал все 4 опасных отхода. Ты настоящий эко-патруль!");
-         }, 500);
-       } else {
-         setTimeout(() => {
-           if (found < 4) {
-             document.getElementById('info').innerHTML = "🔍 Наведи камеру на следующий предмет";
-           }
-         }, 3800);
-       }
-     } else {
-       document.getElementById('info').innerHTML = `♻️ Уже находили! ${t.longMsg}`;
-       setTimeout(() => {
-         if (found < 4) {
-           document.getElementById('info').innerHTML = "🔍 Продолжай искать другие предметы";
-         }
-       }, 2500);
-     }
-   });
- });
+function celebrateComplete() {
+  // Мощный фейерверк
+  canvasConfetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, startVelocity: 20 });
+  canvasConfetti({ particleCount: 150, spread: 120, origin: { y: 0.7, x: 0.3 }, colors: ['#2e7d32', '#ffca28'] });
+  canvasConfetti({ particleCount: 150, spread: 120, origin: { y: 0.7, x: 0.7 }, colors: ['#81c784', '#fff176'] });
+  
+  // Дополнительно вибрация радости
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
+
+// ========= СБРОС ИГРЫ (перезапуск) ==========
+function resetAndRestart() {
+  // Останавливаем текущую AR-сцену, если активна
+  if (sceneElement && sceneElement.components && sceneElement.components['mindar-image']) {
+    try {
+      sceneElement.components['mindar-image'].stop();
+    } catch(e) { console.warn(e); }
+  }
+  
+  // Сбрасываем состояние
+  found = 0;
+  collected = [false, false, false, false];
+  document.getElementById('score').innerText = '0';
+  document.getElementById('info').innerHTML = '🔄 Перезапуск... Наведи камеру на предмет';
+  document.getElementById('info').style.transform = '';
+  
+  // Очищаем контейнер и пересоздаем сцену заново
+  const container = document.getElementById('sceneContainer');
+  if (container) container.innerHTML = '';
+  
+  // Прячем кнопку рестарта на время перезапуска
+  const restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.classList.add('hidden');
+  
+  // Запускаем AR заново
+  startAR(true); // true = skipStartScreen (не показывать стартовый экран)
+}
+
+// ========= ЗАПУСК AR ==========
+function startAR(skipStartScreen = false) {
+  if (!skipStartScreen) {
+    document.getElementById('startScreen').style.display = 'none';
+  } else {
+    // если уже скрыт, ок
+    const startDiv = document.getElementById('startScreen');
+    if (startDiv) startDiv.style.display = 'none';
+  }
+  
+  // Показываем панели
+  document.getElementById('scorePanel').classList.remove('hidden');
+  document.getElementById('info').classList.remove('hidden');
+  
+  const container = document.getElementById('sceneContainer');
+  if (!container) return;
+  
+  // Генерируем сцену с прозрачными плоскостями и текстом
+  const sceneHTML = `
+  <a-scene
+    mindar-image="imageTargetSrc: targets.mind;"
+    embedded
+    vr-mode-ui="enabled:false"
+    device-orientation-permission-ui="enabled:true"
+    style="position:fixed; top:0; left:0; width:100%; height:100%;"
+  >
+    <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+    ${targets.map(t => `
+    <a-entity mindar-image-target="targetIndex:${t.index}" id="t${t.index}">
+      <a-plane color="transparent" width="1.6" height="0.95" transparent="true" opacity="0" visible="false">
+        <a-text value="${t.text.replace(/\n/g, '\\n')}"
+          align="center"
+          color="#ffffff"
+          background="false"
+          width="1.5"
+          position="0 0 0.01"
+          font="exo2bold"
+          wrap-count="20"
+          line-height="1.4"
+          z-offset="0.02">
+        </a-text>
+      </a-plane>
+    </a-entity>
+    `).join('')}
+    <a-light type="ambient" intensity="0.6"></a-light>
+    <a-light type="directional" position="1 2 1" intensity="0.8"></a-light>
+  </a-scene>
+  `;
+  
+  container.innerHTML = sceneHTML;
+  sceneElement = document.querySelector('a-scene');
+  
+  // Принудительный старт MindAR через небольшую задержку
+  setTimeout(() => {
+    if (sceneElement && sceneElement.components && sceneElement.components['mindar-image']) {
+      sceneElement.components['mindar-image'].start();
+    } else {
+      // fallback
+      const mindarComp = sceneElement?.querySelector('[mindar-image]')?.components?.['mindar-image'];
+      if (mindarComp && mindarComp.start) mindarComp.start();
+    }
+  }, 400);
+  
+  // Прикрепляем слушатели после рендера
+  setTimeout(() => {
+    attachEventListeners();
+    // Показываем кнопку рестарта (она всегда нужна после старта)
+    const restartBtn = document.getElementById('restartBtn');
+    if (restartBtn) restartBtn.classList.remove('hidden');
+  }, 1000);
+}
+
+// Обработчики на targetFound с эффектами
+function attachEventListeners() {
+  targets.forEach(t => {
+    const el = document.getElementById(`t${t.index}`);
+    if (!el) return;
+    
+    // Удаляем старые, если есть
+    el.removeEventListener('targetFound', handleTargetFound);
+    el.removeEventListener('targetLost', handleTargetLost);
+    
+    // Создаём замыкания
+    const foundHandler = () => handleTargetFound(t);
+    const lostHandler = () => handleTargetLost(t);
+    
+    el.addEventListener('targetFound', foundHandler);
+    el.addEventListener('targetLost', lostHandler);
+    
+    // Сохраняем для возможного открепления
+    el._foundHandler = foundHandler;
+    el._lostHandler = lostHandler;
+  });
+}
+
+function handleTargetFound(target) {
+  if (!collected[target.index]) {
+    // Отмечаем как найденный
+    collected[target.index] = true;
+    found++;
+    
+    // Обновляем UI
+    document.getElementById('score').innerText = found;
+    document.getElementById('info').innerHTML = `✅ ${target.longMsg}`;
+    
+    // ЭФФЕКТ ОБНАРУЖЕНИЯ!
+    playDiscoveryEffect();
+    
+    // Проверка на победу
+    if (found === 4) {
+      setTimeout(() => {
+        document.getElementById('info').innerHTML = "🎉 Ты ЭКО-ГЕРОЙ! 🌍 Спасибо за спасение планеты!";
+        celebrateComplete();   // конфетти + вибрация
+        alert("🎉 ПОЗДРАВЛЯЮ! Ты собрал все 4 опасных отхода. Ты настоящий эко-патруль!");
+      }, 200);
+    } else {
+      // Через 3.5 секунды вернуть подсказку, если не все собрали
+      setTimeout(() => {
+        if (found < 4) {
+          const infoDiv = document.getElementById('info');
+          if (infoDiv && !infoDiv.innerHTML.includes("ЭКО-ГЕРОЙ")) {
+            infoDiv.innerHTML = "🔍 Наведи камеру на следующий предмет";
+          }
+        }
+      }, 3800);
+    }
+  } else {
+    // Если предмет уже найден — напомним, но без эффекта вспышки (чтобы не раздражало)
+    document.getElementById('info').innerHTML = `♻️ Уже находили! ${target.longMsg}`;
+    setTimeout(() => {
+      if (found < 4) {
+        document.getElementById('info').innerHTML = "🔍 Продолжай искать другие предметы";
+      }
+    }, 2000);
+  }
+}
+
+function handleTargetLost(target) {
+  // Ничего агрессивного, просто для справки
+  if (found < 4) {
+    const infoDiv = document.getElementById('info');
+    if (infoDiv && !infoDiv.innerHTML.includes("✅") && !infoDiv.innerHTML.includes("Уже находили")) {
+      // Если долго не видит маркер, но не спамим
+    }
+  }
+}
+
+// Кнопка рестарта
+document.getElementById('restartBtn')?.addEventListener('click', () => {
+  resetAndRestart();
+});
+
+// Дополнительный эффект: убедимся, что при перезапуске старые слушатели не дублируются
+window.resetAndRestart = resetAndRestart;
 </script>
 </body>
 </html>
-```

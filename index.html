@@ -1,151 +1,185 @@
-const itemsData = {
-    bottle: {
-        name: 'Пластиковая бутылка',
-        harm: '😢 Разлагается 450 лет! Пластик попадает в океан, рыбы принимают его за еду и погибают.',
-        tip: '✅ Используй многоразовую бутылку. Сдавай пластик в спецконтейнеры.',
-        icon: '💧'
-    },
-    battery: {
-        name: 'Батарейка',
-        harm: '☠️ Одна батарейка отравляет 20 м² земли! Содержит ртуть и свинец.',
-        tip: '✅ Сдавай в пункты приёма (IKEA, ВкусВилл). Переходи на аккумуляторы!',
-        icon: '🔋'
-    },
-    cup: {
-        name: 'Одноразовый стаканчик',
-        harm: '🥤 Внутри покрыт пластиком, поэтому НЕ перерабатывается!',
-        tip: '✅ Носи с собой термокружку. В кофейнях дают скидку за свой стакан!',
-        icon: '🧋'
-    },
-    can: {
-        name: 'Аэрозольный баллончик',
-        harm: '💨 Разрушает озоновый слой и может взорваться на свалке.',
-        tip: '✅ Полностью опорожни и сдай в пункт приёма опасных отходов.',
-        icon: '🧴'
-    }
-};
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Эко-патруль</title>
 
-let collected = {
-    bottle: false,
-    battery: false,
-    cup: false,
-    can: false
-};
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
 
-let totalCollected = 0;
-let currentMessageShowing = false;
-let mindARInstance = null;
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
 
-function showTemporaryMessage(text, duration, isError = false) {
-    const msgDiv = document.createElement('div');
-    msgDiv.textContent = text;
-    msgDiv.style.position = 'fixed';
-    msgDiv.style.bottom = '100px';
-    msgDiv.style.left = '20px';
-    msgDiv.style.right = '20px';
-    msgDiv.style.backgroundColor = isError ? 'rgba(255,0,0,0.9)' : 'rgba(0,0,0,0.85)';
-    msgDiv.style.color = 'white';
-    msgDiv.style.padding = '12px';
-    msgDiv.style.borderRadius = '40px';
-    msgDiv.style.textAlign = 'center';
-    msgDiv.style.fontSize = '14px';
-    msgDiv.style.zIndex = '15';
-    msgDiv.style.backdropFilter = 'blur(10px)';
-    msgDiv.style.border = isError ? '1px solid red' : '1px solid #4CAF50';
-    document.body.appendChild(msgDiv);
-    
-    setTimeout(() => {
-        if (msgDiv && msgDiv.remove) msgDiv.remove();
-    }, duration);
+body {
+  position: fixed;
+  width:100%; height:100%;
+  background:#000;
+  font-family:sans-serif;
 }
 
-async function startAR() {
-    document.getElementById('start-screen').style.display = 'none';
-    document.getElementById('ui-overlay').style.display = 'block';
-    document.getElementById('ar-container').style.display = 'block';
-    
-    showTemporaryMessage('🎥 Запуск камеры... Разрешите доступ', 3000);
-    
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop());
-        
-        showTemporaryMessage('✅ Доступ к камере получен! Ищу маркеры...', 2000);
-        
-        mindARInstance = new MindAR.Image({
-            container: document.getElementById('ar-container'),
-            imageTargetSrc: 'target.mind',
-            maxTrack: 1,
-            autoStart: true,
-            showStats: false,      // Убираем квадраты и отладку!
-            uiLoading: false,      // Убираем экран загрузки
-            uiScanning: false      // Убираем эффект сканирования
-        });
-
-        await mindARInstance.start();
-        
-        showTemporaryMessage('🔍 Наведи камеру на эко-предметы', 4000);
-        
-        mindARInstance.addEventListener('targetFound', (event) => {
-            const targetName = event.detail.name;
-            
-            if (!collected[targetName] && !currentMessageShowing) {
-                collected[targetName] = true;
-                totalCollected++;
-                
-                const badgeMap = {
-                    bottle: 'badge-bottle',
-                    battery: 'badge-battery',
-                    cup: 'badge-cup',
-                    can: 'badge-can'
-                };
-                const badgeElement = document.getElementById(badgeMap[targetName]);
-                if (badgeElement) {
-                    badgeElement.classList.add('collected');
-                    badgeElement.innerHTML = '✅';
-                }
-                
-                document.getElementById('progress-text').innerHTML = `Найди 4 предмета: ${totalCollected}/4`;
-                showInfoCard(targetName);
-                
-                if (totalCollected === 4) {
-                    setTimeout(() => {
-                        document.getElementById('congrats').style.display = 'flex';
-                    }, 1000);
-                }
-            }
-        });
-        
-    } catch (err) {
-        console.error('Ошибка:', err);
-        showTemporaryMessage('❌ Ошибка камеры: ' + err.message, 5000, true);
-    }
+/* КНОПКА СТАРТА */
+.start-btn {
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#111;
+  z-index:1000;
+  color:white;
+  flex-direction:column;
 }
 
-function showInfoCard(itemKey) {
-    currentMessageShowing = true;
-    const data = itemsData[itemKey];
-    
-    document.getElementById('message-title').innerHTML = `${data.icon} ${data.name}`;
-    document.getElementById('message-text').innerHTML = `<strong>🌿 Вред природе:</strong><br>${data.harm}`;
-    document.getElementById('message-tip').innerHTML = `<strong>💚 Как помочь:</strong><br>${data.tip}`;
-    document.getElementById('message-panel').style.display = 'block';
-    
-    setTimeout(() => {
-        if (currentMessageShowing) closeMessage();
-    }, 8000);
+.start-btn button {
+  padding:15px 25px;
+  font-size:18px;
+  border:none;
+  border-radius:12px;
+  background:#66BB6A;
+  color:white;
 }
 
-function closeMessage() {
-    document.getElementById('message-panel').style.display = 'none';
-    currentMessageShowing = false;
+/* UI */
+.score {
+  position:absolute;
+  top:20px; right:20px;
+  background:rgba(0,0,0,0.7);
+  padding:10px 15px;
+  border-radius:20px;
+  color:white;
+  z-index:100;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const startBtn = document.getElementById('start-camera-btn');
-    if (startBtn) {
-        startBtn.addEventListener('click', startAR);
-    }
-});
+.info {
+  position:absolute;
+  bottom:20px; left:20px; right:20px;
+  background:rgba(0,0,0,0.8);
+  padding:15px;
+  border-radius:15px;
+  color:white;
+  z-index:100;
+}
 
-window.closeMessage = closeMessage;
+.hidden { display:none; }
+
+/* 👇 ВОТ ЭТИ ДВЕ СТРОКИ ФИКСЯТ КАМЕРУ НА ВЕСЬ ЭКРАН */
+.a-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+</style>
+</head>
+<body>
+
+<div class="start-btn" id="startScreen">
+  <h2>🌍 Эко-патруль</h2>
+  <button onclick="startAR()">Начать</button>
+</div>
+
+<div class="score hidden" id="scorePanel">
+  Найдено: <span id="score">0</span>/4
+</div>
+
+<div class="info hidden" id="info">
+  Наведи камеру на предмет
+</div>
+
+<div id="sceneContainer"></div>
+
+<script>
+let found = 0;
+const collected = [false,false,false,false];
+
+const targets = [
+{
+ index:0,
+ color:"#FF5722",
+ text:"Батарейка\nСдавай в спец. пункты",
+ msg:"🔋 Батарейка!"
+},
+{
+ index:1,
+ color:"#4CAF50",
+ text:"Пластик\n450 лет разложения",
+ msg:"🍼 Бутылка!"
+},
+{
+ index:2,
+ color:"#2196F3",
+ text:"Стакан\nНе перерабатывается",
+ msg:"🥤 Стакан!"
+},
+{
+ index:3,
+ color:"#9C27B0",
+ text:"Аэрозоль\nОпасный отход",
+ msg:"💨 Баллончик!"
+}
+];
+
+function startAR(){
+ document.getElementById('startScreen').style.display='none';
+
+ const sceneHTML = `
+ <a-scene
+   mindar-image="imageTargetSrc: targets.mind;"
+   embedded
+   vr-mode-ui="enabled:false"
+   device-orientation-permission-ui="enabled:true"
+ >
+   <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+
+   ${targets.map(t=>`
+   <a-entity mindar-image-target="targetIndex:${t.index}" id="t${t.index}">
+     <a-plane color="${t.color}" width="1.2" height="0.6">
+       <a-text value="${t.text}"
+         align="center"
+         color="white"
+         width="1"
+         position="0 0 0.01">
+       </a-text>
+     </a-plane>
+   </a-entity>
+   `).join('')}
+
+ </a-scene>
+ `;
+
+ document.getElementById('sceneContainer').innerHTML = sceneHTML;
+
+ setTimeout(()=>{
+   attachListeners();
+   document.getElementById('scorePanel').classList.remove('hidden');
+   document.getElementById('info').classList.remove('hidden');
+ },1000);
+}
+
+function attachListeners(){
+ targets.forEach(t=>{
+   const el = document.getElementById(`t${t.index}`);
+
+   el.addEventListener("targetFound", ()=>{
+     if(!collected[t.index]){
+       collected[t.index]=true;
+       found++;
+
+       document.getElementById('score').innerText = found;
+       document.getElementById('info').innerText = t.msg;
+
+       if(found===4){
+         setTimeout(()=>{
+           alert("🎉 Ты ЭКО-ГЕРОЙ!");
+         },500);
+       }
+     }
+   });
+ });
+}
+</script>
+
+</body>
+</html>

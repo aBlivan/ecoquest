@@ -2,126 +2,143 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Эко-патруль</title>
 
 <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
 
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-  position: fixed;
-  width:100%; height:100%;
+html, body {
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
   background:#000;
-  font-family:sans-serif;
 }
 
-/* КНОПКА СТАРТА */
-.start-btn {
+/* ФИКС ДЛЯ iPhone */
+canvas, video {
+  position:fixed !important;
+  top:0;
+  left:0;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover;
+  z-index:1;
+}
+
+.start {
   position:fixed;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   background:#111;
-  z-index:1000;
-  color:white;
+  display:flex;
   flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  z-index:999;
 }
 
-.start-btn button {
+button {
   padding:15px 25px;
   font-size:18px;
   border:none;
   border-radius:12px;
-  background:#66BB6A;
+  background:#4CAF50;
   color:white;
 }
 
 /* UI */
 .score {
-  position:absolute;
-  top:20px; right:20px;
+  position:fixed;
+  top:20px;
+  right:20px;
   background:rgba(0,0,0,0.7);
   padding:10px 15px;
   border-radius:20px;
   color:white;
+  z-index:10;
 }
 
 .info {
-  position:absolute;
-  bottom:20px; left:20px; right:20px;
-  background:rgba(0,0,0,0.8);
+  position:fixed;
+  bottom:20px;
+  left:15px;
+  right:15px;
+  background:rgba(0,0,0,0.85);
   padding:15px;
   border-radius:15px;
   color:white;
+  z-index:10;
+  line-height:1.4;
 }
 </style>
 </head>
 
 <body>
 
-<div class="start-btn" id="startScreen">
+<div class="start" id="start">
   <h2>🌍 Эко-патруль</h2>
-  <button onclick="startAR()">Начать</button>
+  <button onclick="start()">Начать</button>
 </div>
 
-<div class="score hidden" id="scorePanel">
+<div class="score" id="scoreBox" style="display:none">
   Найдено: <span id="score">0</span>/4
 </div>
 
-<div class="info hidden" id="info">
+<div class="info" id="info" style="display:none">
   Наведи камеру на предмет
 </div>
 
-<div id="sceneContainer"></div>
+<div id="scene"></div>
 
 <script>
 let found = 0;
-const collected = [false,false,false,false];
+const used = [false,false,false,false];
 
-const targets = [
+const data = [
 {
  index:0,
  color:"#FF5722",
- text:"Батарейка\nСдавай в спец. пункты",
- msg:"🔋 Батарейка!"
+ text:"Батарейка",
+ msg:"🔋 Батарейка\n\n❌ Загрязняет почву и воду токсинами\n(ртуть, свинец)\n\n✅ Сдавай в спец. пункты"
 },
 {
  index:1,
  color:"#4CAF50",
- text:"Пластик\n450 лет разложения",
- msg:"🍼 Бутылка!"
+ text:"Бутылка",
+ msg:"🍼 Пластик\n\n❌ Разлагается 450 лет\n❌ Убивает животных\n\n✅ Используй многоразовую"
 },
 {
  index:2,
  color:"#2196F3",
- text:"Стакан\nНе перерабатывается",
- msg:"🥤 Стакан!"
+ text:"Стакан",
+ msg:"🥤 Стаканчик\n\n❌ Не перерабатывается\n❌ Попадает в океан\n\n✅ Возьми термокружку"
 },
 {
  index:3,
  color:"#9C27B0",
- text:"Аэрозоль\nОпасный отход",
- msg:"💨 Баллончик!"
+ text:"Аэрозоль",
+ msg:"💨 Баллончик\n\n❌ Загрязняет воздух\n❌ Вредит озоновому слою\n\n✅ Выбирай альтернативы"
 }
 ];
 
-function startAR(){
- document.getElementById('startScreen').style.display='none';
+function start(){
+ document.getElementById("start").style.display="none";
 
- const sceneHTML = `
+ document.getElementById("scene").innerHTML = `
  <a-scene
    mindar-image="imageTargetSrc: targets.mind;"
    embedded
+   renderer="colorManagement:true;"
    vr-mode-ui="enabled:false"
    device-orientation-permission-ui="enabled:true"
  >
    <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
 
-   ${targets.map(t=>`
+   ${data.map(t=>`
    <a-entity mindar-image-target="targetIndex:${t.index}" id="t${t.index}">
      <a-plane color="${t.color}" width="1.2" height="0.6">
        <a-text value="${t.text}"
@@ -137,31 +154,30 @@ function startAR(){
  </a-scene>
  `;
 
- document.getElementById('sceneContainer').innerHTML = sceneHTML;
-
  setTimeout(()=>{
-   attachListeners();
-   document.getElementById('scorePanel').classList.remove('hidden');
-   document.getElementById('info').classList.remove('hidden');
+   init();
  },1000);
 }
 
-function attachListeners(){
- targets.forEach(t=>{
+function init(){
+ document.getElementById("scoreBox").style.display="block";
+ document.getElementById("info").style.display="block";
+
+ data.forEach(t=>{
    const el = document.getElementById(`t${t.index}`);
 
    el.addEventListener("targetFound", ()=>{
-     if(!collected[t.index]){
-       collected[t.index]=true;
+     if(!used[t.index]){
+       used[t.index] = true;
        found++;
 
-       document.getElementById('score').innerText = found;
-       document.getElementById('info').innerText = t.msg;
+       document.getElementById("score").innerText = found;
+       document.getElementById("info").innerText = data[t.index].msg;
 
        if(found===4){
          setTimeout(()=>{
-           alert("🎉 Ты ЭКО-ГЕРОЙ!");
-         },500);
+           document.getElementById("info").innerText = "🎉 Ты ЭКО-ГЕРОЙ!";
+         },1000);
        }
      }
    });

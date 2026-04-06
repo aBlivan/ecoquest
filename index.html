@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image.prod.js"></script>
+  <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+</head>
+
+<body>
+  <a-scene
+    mindar-image="imageTargetSrc: targets.mind;"
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+  >
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 0 — Батарейка -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-plane position="0 0 0" width="1" height="0.5" color="red"></a-plane>
+      <a-text value="Батарейка\nТоксична!\nСдавай в спец. пункты" 
+              align="center" color="white" width="2"></a-text>
+    </a-entity>
+
+    <!-- 1 — Бутылка -->
+    <a-entity mindar-image-target="targetIndex: 1">
+      <a-plane position="0 0 0" width="1" height="0.5" color="blue"></a-plane>
+      <a-text value="Пластик\nРазлагается 450 лет\nИспользуй многоразовую" 
+              align="center" color="white" width="2"></a-text>
+    </a-entity>
+
+    <!-- 2 — Стакан -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <a-plane position="0 0 0" width="1" height="0.5" color="green"></a-plane>
+      <a-text value="Стаканчик\nНе перерабатывается\nВозьми термокружку" 
+              align="center" color="white" width="2"></a-text>
+    </a-entity>
+
+    <!-- 3 — Аэрозоль -->
+    <a-entity mindar-image-target="targetIndex: 3">
+      <a-plane position="0 0 0" width="1" height="0.5" color="purple"></a-plane>
+      <a-text value="Аэрозоль\nВреден для природы\nСдавай как опасный отход" 
+              align="center" color="white" width="2"></a-text>
+    </a-entity>
+
+  </a-scene>
+</body>
+</html>

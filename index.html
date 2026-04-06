@@ -1,9 +1,11 @@
+Вот исправленный HTML-код: убрал квадраты вокруг предметов, добавил описание вреда для природы для каждого объекта.
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Эко-патруль</title>
+<title>Эко-патруль — Вред природе</title>
 
 <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
@@ -39,6 +41,7 @@ body {
   border-radius:12px;
   background:#66BB6A;
   color:white;
+  cursor:pointer;
 }
 
 /* UI */
@@ -50,21 +53,27 @@ body {
   border-radius:20px;
   color:white;
   z-index:100;
+  font-weight:bold;
+  backdrop-filter: blur(4px);
 }
 
 .info {
   position:absolute;
   bottom:20px; left:20px; right:20px;
-  background:rgba(0,0,0,0.8);
+  background:rgba(0,0,0,0.85);
   padding:15px;
   border-radius:15px;
   color:white;
   z-index:100;
+  text-align:center;
+  backdrop-filter: blur(8px);
+  font-size:15px;
+  font-weight:500;
 }
 
 .hidden { display:none; }
 
-/* 👇 ГЛАВНОЕ - заставляем контейнер и сцену быть на весь экран */
+/* Контейнер и сцена на весь экран */
 #sceneContainer {
   position: fixed !important;
   top: 0 !important;
@@ -91,21 +100,34 @@ body {
   height: 100% !important;
   object-fit: cover !important;
 }
+
+/* Убираем любой визуальный "квадрат" или фон от плоскостей */
+a-plane {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Но текст внутри делаем видимым */
+a-plane a-text {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 </style>
 </head>
 <body>
 
 <div class="start-btn" id="startScreen">
   <h2>🌍 Эко-патруль</h2>
+  <p style="margin-top:10px; margin-bottom:15px;">Наведи камеру на экологические метки</p>
   <button onclick="startAR()">Начать</button>
 </div>
 
 <div class="score hidden" id="scorePanel">
-  Найдено: <span id="score">0</span>/4
+  ♻️ Найдено: <span id="score">0</span>/4
 </div>
 
 <div class="info hidden" id="info">
-  Наведи камеру на предмет
+  🔍 Наведи камеру на предмет
 </div>
 
 <div id="sceneContainer"></div>
@@ -114,36 +136,43 @@ body {
 let found = 0;
 const collected = [false,false,false,false];
 
+// Данные по каждому предмету: название + описание вреда для природы (через пробел и перенос)
 const targets = [
 {
  index:0,
  color:"#FF5722",
- text:"Батарейка\nСдавай в спец. пункты",
- msg:"🔋 Батарейка!"
+ text:"🔋 БАТАРЕЙКА\n\n☠️ Одна батарейка загрязняет 20 м² земли\nи 400 литров воды тяжелыми металлами!",
+ shortMsg:"🔋 Батарейка!",
+ longMsg:"☠️ Одна батарейка отравляет 20 м² почвы и 400 л воды"
 },
 {
  index:1,
  color:"#4CAF50",
- text:"Пластик\n450 лет разложения",
- msg:"🍼 Бутылка!"
+ text:"🍼 ПЛАСТИКОВАЯ БУТЫЛКА\n\n⏳ Разлагается 450 лет\n🐢 Животные принимают за еду — гибнут",
+ shortMsg:"🍼 Пластик!",
+ longMsg:"⏳ 450 лет разложения. 🐢 Убивает морских обитателей"
 },
 {
  index:2,
  color:"#2196F3",
- text:"Стакан\nНе перерабатывается",
- msg:"🥤 Стакан!"
+ text:"🥤 СТЕКЛЯННЫЙ СТАКАН\n\n🔁 Не сгорает, не гниет\n🗑️ В природе лежит >1000 лет, травмирует животных",
+ shortMsg:"🥤 Стекло!",
+ longMsg:"🔁 Почти не разлагается. 🦶 Животные ранятся об осколки"
 },
 {
  index:3,
  color:"#9C27B0",
- text:"Аэрозоль\nОпасный отход",
- msg:"💨 Баллончик!"
+ text:"💨 АЭРОЗОЛЬНЫЙ БАЛЛОН\n\n💥 Взрывоопасен на свалке\n🧪 Токсичные газы разрушают озоновый слой",
+ shortMsg:"💨 Баллончик!",
+ longMsg:"💥 Взрывоопасен. 🧪 Разрушает озоновый слой"
 }
 ];
 
 function startAR(){
  document.getElementById('startScreen').style.display='none';
 
+ // Создаем сцену, но plane делаем полностью прозрачным (без квадрата)
+ // Чтобы убрать квадрат — plane будет без цвета и без видимости, но текст останется
  const sceneHTML = `
  <a-scene
    mindar-image="imageTargetSrc: targets.mind;"
@@ -156,16 +185,27 @@ function startAR(){
 
    ${targets.map(t=>`
    <a-entity mindar-image-target="targetIndex:${t.index}" id="t${t.index}">
-     <a-plane color="${t.color}" width="1.2" height="0.6">
+     <!-- Плоскость полностью прозрачная и невидимая — убираем квадрат -->
+     <a-plane color="transparent" width="1.4" height="0.9" transparent="true" opacity="0" visible="false">
+       <!-- Текст с описанием вреда и названием, через пробел и перенос строки -->
        <a-text value="${t.text}"
          align="center"
-         color="white"
-         width="1"
-         position="0 0 0.01">
+         color="#ffffff"
+         background="false"
+         width="1.3"
+         position="0 0 0.01"
+         font="exo2bold"
+         wrap-count="18"
+         line-height="1.4"
+         z-offset="0.02">
        </a-text>
      </a-plane>
    </a-entity>
    `).join('')}
+
+   <!-- Добавим небольшое освещение чтобы текст лучше читался -->
+   <a-light type="ambient" intensity="0.6"></a-light>
+   <a-light type="directional" position="1 2 1" intensity="0.8"></a-light>
 
  </a-scene>
  `;
@@ -182,6 +222,7 @@ function startAR(){
 function attachListeners(){
  targets.forEach(t=>{
    const el = document.getElementById(`t${t.index}`);
+   if(!el) return;
 
    el.addEventListener("targetFound", ()=>{
      if(!collected[t.index]){
@@ -189,18 +230,73 @@ function attachListeners(){
        found++;
 
        document.getElementById('score').innerText = found;
-       document.getElementById('info').innerText = t.msg;
+       // В нижней панели показываем подробный вред для природы
+       document.getElementById('info').innerHTML = `✅ ${t.longMsg}`;
 
+       // Дополнительно: плавное уведомление
        if(found===4){
          setTimeout(()=>{
-           alert("🎉 Ты ЭКО-ГЕРОЙ!");
+           document.getElementById('info').innerHTML = "🎉 Ты ЭКО-ГЕРОЙ! 🌍 Спасибо за заботу о планете!";
+           alert("🎉 ПОЗДРАВЛЯЮ! Ты собрал все 4 опасных отхода. Ты настоящий эко-патруль!");
          },500);
+       } else {
+         // Через 3 секунды возвращаем подсказку, но не перекрываем важную инфу
+         setTimeout(()=>{
+           if(found < 4){
+             document.getElementById('info').innerHTML = "🔍 Наведи камеру на следующий предмет";
+           }
+         }, 3500);
        }
+     } else {
+       // Если уже находили этот предмет — показываем напоминание о вреде
+       document.getElementById('info').innerHTML = `♻️ Уже находили! ${t.longMsg}`;
+       setTimeout(()=>{
+         if(found < 4){
+           document.getElementById('info').innerHTML = "🔍 Продолжай искать другие предметы";
+         }
+       }, 2500);
+     }
+   });
+   
+   // Необязательно, но можно добавить событие при потери маркера — не мешает
+   el.addEventListener("targetLost", ()=>{
+     // если ничего не найдено или просто сброс сообщения, но не сбиваем счёт
+     if(found < 4 && document.getElementById('info').innerHTML.includes("✅") === false){
+       // оставляем без изменений
      }
    });
  });
 }
 </script>
 
+<!-- Дополнительный фикс: если какие-то плоскости всё же видны из-за особенностей рендера -->
+<style>
+  /* Полностью скрываем любые background-квадраты, оставляя только текст */
+  a-plane {
+    background: transparent !important;
+    material: transparent;
+    opacity: 0 !important;
+    visible: false;
+  }
+  a-plane[visible="false"] {
+    display: block; /* не ломаем layout */
+  }
+  a-text {
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    background: transparent;
+    white-space: pre-wrap;
+  }
+  /* Убираем любой дефолтный bounding box */
+  .a-enter-vr, .a-orientation-modal {
+    display: none;
+  }
+  /* Убедимся, что mindar не добавляет лишних бордеров */
+  canvas {
+    outline: none;
+    border: none;
+  }
+</style>
 </body>
 </html>
+```

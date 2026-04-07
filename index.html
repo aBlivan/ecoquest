@@ -139,6 +139,81 @@ body {
   transition:opacity 0.08s linear;
 }
 
+/* ПОЗДРАВИТЕЛЬНОЕ МОДАЛЬНОЕ ОКНО (НОВОЕ) */
+.congrats-modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(12px);
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  visibility:hidden;
+  transition:all 0.3s ease;
+}
+
+.congrats-modal.show {
+  opacity:1;
+  visibility:visible;
+}
+
+.congrats-card {
+  background:linear-gradient(145deg, #1b4d1f, #0a2f1a);
+  border-radius:48px;
+  padding:32px 28px;
+  max-width:85%;
+  width:340px;
+  text-align:center;
+  color:white;
+  box-shadow:0 25px 40px rgba(0,0,0,0.5), 0 0 0 2px #6fcf97 inset;
+  transform:scale(0.9);
+  transition:transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.congrats-modal.show .congrats-card {
+  transform:scale(1);
+}
+
+.congrats-card h2 {
+  font-size:2.4rem;
+  margin-bottom:8px;
+  background:linear-gradient(135deg, #f9f871, #c6ffb7);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.congrats-card .emoji-big {
+  font-size:4rem;
+  margin:12px 0 8px;
+}
+
+.congrats-card p {
+  font-size:1.2rem;
+  margin:16px 0;
+  line-height:1.4;
+}
+
+.congrats-card button {
+  background:#ffb74d;
+  border:none;
+  padding:12px 24px;
+  border-radius:60px;
+  font-size:1.1rem;
+  font-weight:bold;
+  color:#2c2c2c;
+  margin-top:8px;
+  cursor:pointer;
+  transition:0.2s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+}
+
+.congrats-card button:active {
+  transform:scale(0.96);
+}
+
 /* Контейнер и сцена на весь экран */
 #sceneContainer {
   position: fixed !important;
@@ -211,6 +286,16 @@ canvas {
   🔄 Начать заново
 </div>
 
+<!-- НОВОЕ ПОЗДРАВИТЕЛЬНОЕ МОДАЛЬНОЕ ОКНО -->
+<div id="congratsModal" class="congrats-modal">
+  <div class="congrats-card">
+    <div class="emoji-big">🏆🌱</div>
+    <h2>Ты красавчик!</h2>
+    <p>Ты — настоящий <strong>ЭКО-АКТИВИСТ</strong>!<br>✨ Спасибо, что спасаешь планету ✨</p>
+    <button id="closeCongratsBtn">🚀 Продолжить</button>
+  </div>
+</div>
+
 <div id="sceneContainer"></div>
 <div id="flashEffect" class="flash-overlay"></div>
 
@@ -220,6 +305,7 @@ let found = 0;
 let collected = [false, false, false, false];
 let currentSceneActive = false;
 let sceneElement = null;
+let gameCompleted = false;        // Флаг завершения игры, чтобы не спамить повторно
 
 // Данные предметов
 const targets = [
@@ -294,8 +380,53 @@ function celebrateComplete() {
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
 
+// === НОВАЯ ФУНКЦИЯ: ПОКАЗАТЬ КРАСИВОЕ УВЕДОМЛЕНИЕ "ТЫ КРАСАВЧИК ЭКО-АКТИВИСТ" ===
+function showEcoActivistCongratulations() {
+  if (gameCompleted) return; // уже показывали
+  gameCompleted = true;
+  
+  const modal = document.getElementById('congratsModal');
+  if (!modal) return;
+  
+  // Дополнительные салюты и веселье
+  celebrateComplete();
+  
+  // Показываем модальное окно
+  modal.classList.add('show');
+  
+  // Также обновим информационную панель (на всякий случай)
+  const infoDiv = document.getElementById('info');
+  if (infoDiv) {
+    infoDiv.innerHTML = "🏆 ТЫ ЭКО-ГЕРОЙ! 🌍 Планета спасена!";
+  }
+  
+  // Блокируем дальнейшие повторные срабатывания сбора (но рестарт всё равно возможен)
+  // При закрытии модалки ничего не ломаем, просто скрываем окно
+}
+
+// Функция скрытия модалки и разблокировка? При закрытии не сбрасываем игру, но кнопка рестарта остаётся.
+function closeCongratsModal() {
+  const modal = document.getElementById('congratsModal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+  // Не сбрасываем gameCompleted - игра завершена, но можно нажать рестарт.
+  // Инфо панель оставим с поздравлением, но после закрытия покажем финальный текст
+  const infoDiv = document.getElementById('info');
+  if (infoDiv && !infoDiv.innerHTML.includes("ЭКО-ГЕРОЙ")) {
+    // на всякий случай
+    infoDiv.innerHTML = "🌿 Ты Эко-герой! Нажми 'Начать заново' для новой игры.";
+  } else if (infoDiv) {
+    infoDiv.innerHTML = "🌿 Ты Эко-герой! Нажми 'Начать заново' для новой игры.";
+  }
+}
+
 // ========= СБРОС ИГРЫ (перезапуск) ==========
 function resetAndRestart() {
+  // Скрываем поздравительное окно если открыто
+  const modal = document.getElementById('congratsModal');
+  if (modal) modal.classList.remove('show');
+  
   // Останавливаем текущую AR-сцену, если активна
   if (sceneElement && sceneElement.components && sceneElement.components['mindar-image']) {
     try {
@@ -306,6 +437,8 @@ function resetAndRestart() {
   // Сбрасываем состояние
   found = 0;
   collected = [false, false, false, false];
+  gameCompleted = false;   // сбрасываем флаг завершения
+  
   document.getElementById('score').innerText = '0';
   document.getElementById('info').innerHTML = '🔄 Перезапуск... Наведи камеру на предмет';
   document.getElementById('info').style.transform = '';
@@ -314,7 +447,7 @@ function resetAndRestart() {
   const container = document.getElementById('sceneContainer');
   if (container) container.innerHTML = '';
   
-  // Прячем кнопку рестарта на время перезапуска
+  // Прячем кнопку рестарта на время перезапуска (покажется снова при старте)
   const restartBtn = document.getElementById('restartBtn');
   if (restartBtn) restartBtn.classList.add('hidden');
   
@@ -418,6 +551,16 @@ function attachEventListeners() {
 }
 
 function handleTargetFound(target) {
+  // Если игра уже завершена (все собрано), не обрабатываем новые нахождения маркеров
+  if (gameCompleted) {
+    // Можно показать сообщение, что игра пройдена, и предложить рестарт
+    const infoDiv = document.getElementById('info');
+    if (infoDiv && !infoDiv.innerHTML.includes("ЭКО-ГЕРОЙ")) {
+      infoDiv.innerHTML = "🏆 Ты уже Эко-герой! Нажми 'Начать заново' для новой игры.";
+    }
+    return;
+  }
+  
   if (!collected[target.index]) {
     // Отмечаем как найденный
     collected[target.index] = true;
@@ -430,17 +573,23 @@ function handleTargetFound(target) {
     // ЭФФЕКТ ОБНАРУЖЕНИЯ!
     playDiscoveryEffect();
     
-    // Проверка на победу
+    // Проверка на победу (собраны все 4)
     if (found === 4) {
+      // Вызываем новое поздравительное окно "Ты красавчик, эко-активист"
+      showEcoActivistCongratulations();
+      
+      // Информация в панели обновляется внутри showEcoActivistCongratulations,
+      // но дополнительно можно оставить финальный текст.
       setTimeout(() => {
-        document.getElementById('info').innerHTML = "🎉 Ты ЭКО-ГЕРОЙ! 🌍 Спасибо за спасение планеты!";
-        celebrateComplete();   // конфетти + вибрация
-        alert("🎉 ПОЗДРАВЛЯЮ! Ты собрал все 4 опасных отхода. Ты настоящий эко-патруль!");
-      }, 200);
+        const infoDivAfter = document.getElementById('info');
+        if (infoDivAfter && !infoDivAfter.innerHTML.includes("ЭКО-ГЕРОЙ")) {
+          infoDivAfter.innerHTML = "🎉 Ты ЭКО-ГЕРОЙ! 🌍 Спасибо за спасение планеты!";
+        }
+      }, 100);
     } else {
       // Через 3.5 секунды вернуть подсказку, если не все собрали
       setTimeout(() => {
-        if (found < 4) {
+        if (found < 4 && !gameCompleted) {
           const infoDiv = document.getElementById('info');
           if (infoDiv && !infoDiv.innerHTML.includes("ЭКО-ГЕРОЙ")) {
             infoDiv.innerHTML = "🔍 Наведи камеру на следующий предмет";
@@ -452,7 +601,7 @@ function handleTargetFound(target) {
     // Если предмет уже найден — напомним, но без эффекта вспышки (чтобы не раздражало)
     document.getElementById('info').innerHTML = `♻️ Уже находили! ${target.longMsg}`;
     setTimeout(() => {
-      if (found < 4) {
+      if (found < 4 && !gameCompleted) {
         document.getElementById('info').innerHTML = "🔍 Продолжай искать другие предметы";
       }
     }, 2000);
@@ -460,11 +609,11 @@ function handleTargetFound(target) {
 }
 
 function handleTargetLost(target) {
-  // Ничего агрессивного, просто для справки
-  if (found < 4) {
+  // Ничего агрессивного, просто для справки, но не перебиваем поздравление
+  if (found < 4 && !gameCompleted) {
     const infoDiv = document.getElementById('info');
-    if (infoDiv && !infoDiv.innerHTML.includes("✅") && !infoDiv.innerHTML.includes("Уже находили")) {
-      // Если долго не видит маркер, но не спамим
+    if (infoDiv && !infoDiv.innerHTML.includes("✅") && !infoDiv.innerHTML.includes("Уже находили") && !infoDiv.innerHTML.includes("ЭКО-ГЕРОЙ")) {
+      // Можно оставить без изменений, чтобы не дергалось
     }
   }
 }
@@ -474,7 +623,22 @@ document.getElementById('restartBtn')?.addEventListener('click', () => {
   resetAndRestart();
 });
 
-// Дополнительный эффект: убедимся, что при перезапуске старые слушатели не дублируются
+// Закрытие модального окна через кнопку
+document.getElementById('closeCongratsBtn')?.addEventListener('click', () => {
+  closeCongratsModal();
+});
+
+// Дополнительно: если кликнуть по фону модалки - закрываем (но необязательно, но для UX приятно)
+const congratsModalBg = document.getElementById('congratsModal');
+if (congratsModalBg) {
+  congratsModalBg.addEventListener('click', (e) => {
+    // Закрываем только если клик именно на фоне (на самом модальном окне, а не на карточке)
+    if (e.target === congratsModalBg) {
+      closeCongratsModal();
+    }
+  });
+}
+
 window.resetAndRestart = resetAndRestart;
 </script>
 </body>
